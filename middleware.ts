@@ -1,30 +1,55 @@
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
-  // Check for Supabase auth token in cookies
-  const accessToken = req.cookies.get('sb-access-token')?.value || 
-                     req.cookies.get('supabase-auth-token')?.value
+  let response = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  })
 
-  // Simple check - if no token and trying to access protected route, redirect to login
-  // Note: This is a basic check. Full auth validation happens in page components
-  if (!accessToken && !req.nextUrl.pathname.startsWith('/auth') && 
-      !req.nextUrl.pathname.startsWith('/_next') && 
-      req.nextUrl.pathname !== '/') {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            req.cookies.set(name, value)
+            response.cookies.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
+
+  // Refresh session if expired - this ensures cookies are synced
+  const { data: { session }, error: authError } = await supabase.auth.getSession()
+  const pathname = req.nextUrl.pathname
+  
+  // Log for debugging (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    const cookieNames = req.cookies.getAll().map(c => c.name).join(', ')
+    console.log('Middleware - Path:', pathname, 'Session:', session ? 'exists' : 'none', 'Error:', authError?.message, 'Cookies:', cookieNames)
+  }
+
+  // Define public routes that don't require authentication
+  const publicRoutes = ['/auth/login', '/auth/signup']
+
+  // Redirect to login if no session and not on a public route
+  if (!session && !publicRoutes.includes(pathname)) {
     return NextResponse.redirect(new URL('/auth/login', req.url))
   }
 
-  return NextResponse.next()
+  return response
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }

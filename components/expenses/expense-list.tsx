@@ -26,19 +26,31 @@ export default function ExpenseList({ farmId, canEdit }: { farmId: string; canEd
   }, [farmId])
 
   const loadExpenses = async () => {
-    const { data, error } = await supabase
-      .from('expenses')
-      .select('*')
-      .eq('farm_id', farmId)
-      .order('transaction_date', { ascending: false })
-      .limit(50)
+    try {
+      setLoading(true)
+      let query = supabase
+        .from('expenses')
+        .select('*')
+      
+      if (farmId) {
+        query = query.eq('farm_id', farmId)
+      }
+      
+      const { data, error } = await query.order('transaction_date', { ascending: false })
+        .limit(50)
 
-    if (error) {
-      console.error('Error loading expenses:', error)
-    } else {
-      setExpenses(data || [])
+      if (error) {
+        console.error('Error loading expenses:', error.message || error)
+        setExpenses([])
+      } else {
+        setExpenses(data || [])
+      }
+    } catch (err) {
+      console.error('Unexpected error loading expenses:', err)
+      setExpenses([])
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const handleDelete = async (id: string) => {
@@ -78,7 +90,7 @@ export default function ExpenseList({ farmId, canEdit }: { farmId: string; canEd
     <Card>
       <CardContent className="p-6">
         {expenses.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">支出データがありません</p>
+          <p className="text-gray-900 text-center py-8">支出データがありません</p>
         ) : (
           <div className="space-y-4">
             {expenses.map((item) => (
@@ -87,15 +99,15 @@ export default function ExpenseList({ farmId, canEdit }: { farmId: string; canEd
                 className="flex justify-between items-center border-b pb-4 last:border-0"
               >
                 <div className="flex-1">
-                  <div className="font-medium">
+                  <div className="font-medium text-gray-900">
                     {categoryLabels[item.category] || item.category}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-gray-900">
                     {formatDate(item.transaction_date)}
                     {item.vendor_name && ` • ${item.vendor_name}`}
                   </div>
                   {item.description && (
-                    <div className="text-sm text-gray-600 mt-1">{item.description}</div>
+                    <div className="text-sm text-gray-900 mt-1">{item.description}</div>
                   )}
                 </div>
                 <div className="flex items-center gap-4">

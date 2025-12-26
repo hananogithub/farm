@@ -49,22 +49,30 @@ export default function AccountingPage() {
 
     try {
       // Fetch revenue
-      const { data: revenue } = await supabase
+      let revenueQuery = supabase
         .from('revenue')
         .select('*')
-        .eq('farm_id', profile.id)
         .gte('transaction_date', dateRange.start)
         .lte('transaction_date', dateRange.end)
-        .order('transaction_date', { ascending: true })
+      
+      if (profile?.id) {
+        revenueQuery = revenueQuery.eq('farm_id', profile.id)
+      }
+      
+      const { data: revenue } = await revenueQuery.order('transaction_date', { ascending: true })
 
       // Fetch expenses
-      const { data: expenses } = await supabase
+      let expensesQuery = supabase
         .from('expenses')
         .select('*')
-        .eq('farm_id', profile.id)
         .gte('transaction_date', dateRange.start)
         .lte('transaction_date', dateRange.end)
-        .order('transaction_date', { ascending: true })
+      
+      if (profile?.id) {
+        expensesQuery = expensesQuery.eq('farm_id', profile.id)
+      }
+      
+      const { data: expenses } = await expensesQuery.order('transaction_date', { ascending: true })
 
       // Create CSV content
       let csv = '取引種別,日付,カテゴリ/種別,金額,相手先,備考\n'

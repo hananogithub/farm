@@ -1,3 +1,27 @@
+-- Safe version: Drop existing tables if they exist (DEVELOPMENT ONLY)
+-- WARNING: This will delete all existing data!
+
+-- Drop views first
+DROP VIEW IF EXISTS profit_per_animal CASCADE;
+DROP VIEW IF EXISTS monthly_profit CASCADE;
+
+-- Drop tables in reverse dependency order
+DROP TABLE IF EXISTS subsidies CASCADE;
+DROP TABLE IF EXISTS expenses CASCADE;
+DROP TABLE IF EXISTS revenue CASCADE;
+DROP TABLE IF EXISTS animals CASCADE;
+DROP TABLE IF EXISTS herds CASCADE;
+DROP TABLE IF EXISTS profiles CASCADE;
+
+-- Drop types
+DROP TYPE IF EXISTS subsidy_status CASCADE;
+DROP TYPE IF EXISTS expense_category CASCADE;
+DROP TYPE IF EXISTS revenue_type CASCADE;
+DROP TYPE IF EXISTS animal_status CASCADE;
+DROP TYPE IF EXISTS animal_type CASCADE;
+DROP TYPE IF EXISTS user_role CASCADE;
+
+-- Now run the original migration
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -230,6 +254,10 @@ CREATE POLICY "Users can view their own profile"
   ON profiles FOR SELECT
   USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can insert their own profile"
+  ON profiles FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
 CREATE POLICY "Users can update their own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = user_id);
@@ -423,6 +451,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Drop trigger if exists and recreate
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

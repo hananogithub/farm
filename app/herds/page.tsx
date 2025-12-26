@@ -32,11 +32,9 @@ export default async function HerdsPage() {
         <div className="px-4 py-6 sm:px-0">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900">畜群管理</h1>
-            {canEdit && (
-              <Link href="/herds/new">
-                <Button>新規登録</Button>
-              </Link>
-            )}
+            <Link href="/herds/new">
+              <Button>新規登録</Button>
+            </Link>
           </div>
           <HerdList farmId={profile.id} canEdit={canEdit} />
         </div>

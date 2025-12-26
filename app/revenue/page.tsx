@@ -32,11 +32,9 @@ export default async function RevenuePage() {
         <div className="px-4 py-6 sm:px-0">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900">収益管理</h1>
-            {canEdit && (
-              <Link href="/revenue/new">
-                <Button>新規登録</Button>
-              </Link>
-            )}
+            <Link href="/revenue/new">
+              <Button>新規登録</Button>
+            </Link>
           </div>
           <RevenueList farmId={profile.id} canEdit={canEdit} />
         </div>

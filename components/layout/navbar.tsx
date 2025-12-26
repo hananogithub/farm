@@ -64,7 +64,12 @@ export default function Navbar() {
               </Link>
             </div>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
+            <Link href="/profile">
+              <Button variant="ghost" className="text-gray-900">
+                プロフィール
+              </Button>
+            </Link>
             <Button variant="outline" onClick={handleLogout}>
               ログアウト
             </Button>

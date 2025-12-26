@@ -14,22 +14,66 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    e.stopPropagation()
     setError(null)
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      console.log('Starting login...')
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (error) {
-      setError(error.message)
+      if (error) {
+        console.error('Login error:', error)
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+
+      console.log('Login successful, user:', data.user?.id)
+      console.log('Session:', data.session ? 'exists' : 'missing')
+
+      if (data.user && data.session) {
+        console.log('✅ Login successful - User ID:', data.user.id)
+        console.log('✅ Session exists:', !!data.session)
+        
+        // createBrowserClient automatically sets cookies in the browser
+        // Wait for cookies to be properly set
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        // Verify session is accessible on client side
+        const { data: { session: verifiedSession }, error: sessionError } = await supabase.auth.getSession()
+        console.log('✅ Session verification - exists:', !!verifiedSession, 'error:', sessionError)
+        
+        // Check if cookies are set
+        const cookies = document.cookie
+        console.log('✅ Cookies:', cookies ? 'set' : 'not set')
+        if (cookies) {
+          const cookieNames = cookies.split(';').map(c => c.split('=')[0].trim()).join(', ')
+          console.log('✅ Cookie names:', cookieNames)
+          
+          // Check for Supabase auth cookies
+          const hasAuthCookies = cookieNames.includes('sb-') || cookieNames.includes('supabase')
+          console.log('✅ Has auth cookies:', hasAuthCookies)
+        }
+        
+        // Redirect to dashboard using Next.js router
+        // router.push() is the correct way for Client Components
+        console.log('✅ Redirecting to dashboard...')
+        router.push('/dashboard')
+      } else {
+        console.error('❌ No user or session after login')
+        setError('ログインに失敗しました。セッションが作成されませんでした。')
+        setLoading(false)
+      }
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('ログイン中にエラーが発生しました。')
       setLoading(false)
-    } else {
-      router.push('/dashboard')
-      router.refresh()
     }
   }
 
@@ -44,7 +88,12 @@ export default function LoginPage() {
             アカウントにログイン
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+        <form 
+          className="mt-8 space-y-6" 
+          onSubmit={handleLogin}
+          method="post"
+          action="#"
+        >
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}

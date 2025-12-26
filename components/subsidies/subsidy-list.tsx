@@ -27,18 +27,30 @@ export default function SubsidyList({ farmId, canEdit }: { farmId: string; canEd
   }, [farmId])
 
   const loadSubsidies = async () => {
-    const { data, error } = await supabase
-      .from('subsidies')
-      .select('*')
-      .eq('farm_id', farmId)
-      .order('application_deadline', { ascending: true, nullsLast: true })
+    try {
+      setLoading(true)
+      let query = supabase
+        .from('subsidies')
+        .select('*')
+      
+      if (farmId) {
+        query = query.eq('farm_id', farmId)
+      }
+      
+      const { data, error } = await query.order('application_deadline', { ascending: true, nullsLast: true })
 
-    if (error) {
-      console.error('Error loading subsidies:', error)
-    } else {
-      setSubsidies(data || [])
+      if (error) {
+        console.error('Error loading subsidies:', error.message || error)
+        setSubsidies([])
+      } else {
+        setSubsidies(data || [])
+      }
+    } catch (err) {
+      console.error('Unexpected error loading subsidies:', err)
+      setSubsidies([])
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   if (loading) {
@@ -61,7 +73,7 @@ export default function SubsidyList({ farmId, canEdit }: { farmId: string; canEd
       case 'rejected':
         return 'text-red-600'
       default:
-        return 'text-gray-600'
+        return 'text-gray-900'
     }
   }
 
@@ -69,7 +81,7 @@ export default function SubsidyList({ farmId, canEdit }: { farmId: string; canEd
     <Card>
       <CardContent className="p-6">
         {subsidies.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">補助金・助成金データがありません</p>
+          <p className="text-gray-900 text-center py-8">補助金・助成金データがありません</p>
         ) : (
           <div className="space-y-4">
             {subsidies.map((subsidy) => (
@@ -80,12 +92,12 @@ export default function SubsidyList({ farmId, canEdit }: { farmId: string; canEd
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold text-lg">{subsidy.name}</h3>
+                      <h3 className="font-semibold text-lg text-gray-900">{subsidy.name}</h3>
                       <span className={`text-sm font-medium ${getStatusColor(subsidy.status)}`}>
                         {statusLabels[subsidy.status] || subsidy.status}
                       </span>
                     </div>
-                    <div className="space-y-1 text-sm text-gray-600">
+                    <div className="space-y-1 text-sm text-gray-900">
                       <div>
                         予定額: <span className="font-medium">{formatCurrency(subsidy.expected_amount)}</span>
                       </div>

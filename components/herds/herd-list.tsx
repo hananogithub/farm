@@ -23,18 +23,30 @@ export default function HerdList({ farmId, canEdit }: { farmId: string; canEdit:
   }, [farmId])
 
   const loadHerds = async () => {
-    const { data, error } = await supabase
-      .from('herds')
-      .select('*')
-      .eq('farm_id', farmId)
-      .order('created_at', { ascending: false })
+    try {
+      setLoading(true)
+      let query = supabase
+        .from('herds')
+        .select('*')
+      
+      if (farmId) {
+        query = query.eq('farm_id', farmId)
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error loading herds:', error)
-    } else {
-      setHerds(data || [])
+      if (error) {
+        console.error('Error loading herds:', error.message || error)
+        setHerds([])
+      } else {
+        setHerds(data || [])
+      }
+    } catch (err) {
+      console.error('Unexpected error loading herds:', err)
+      setHerds([])
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const handleDelete = async (id: string) => {
@@ -66,7 +78,7 @@ export default function HerdList({ farmId, canEdit }: { farmId: string; canEdit:
     <Card>
       <CardContent className="p-6">
         {herds.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">畜群データがありません</p>
+          <p className="text-gray-900 text-center py-8">畜群データがありません</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {herds.map((herd) => (
@@ -76,8 +88,8 @@ export default function HerdList({ farmId, canEdit }: { farmId: string; canEdit:
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <h3 className="font-semibold text-lg">{herd.name}</h3>
-                    <p className="text-sm text-gray-500">
+                    <h3 className="font-semibold text-lg text-gray-900">{herd.name}</h3>
+                    <p className="text-sm text-gray-900">
                       {animalTypeLabels[herd.animal_type] || herd.animal_type}
                     </p>
                   </div>
